@@ -18,18 +18,35 @@ public class FuelSource : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        LanternManager lantern = other.GetComponent<LanternManager>();
-        if (lantern != null)
+        // Find the player GameObject
+        GameObject playerObj = other.gameObject.GetComponentInParent<PlayerController>().gameObject;
+
+        if (playerObj != null)
         {
-            lantern.ReplenishFuel(fuelAmount);
+            // Find the LanternManager component on the player's child GameObject
+            LanternManager lantern = playerObj.GetComponentInChildren<LanternManager>();
 
-            // // Play the pickup sound
-            // if (pickupSound != null && audioSource != null)
-            // {
-            //     audioSource.PlayOneShot(pickupSound);
-            // }
+            if (lantern != null)
+            {
+                lantern.ReplenishFuel(fuelAmount);
 
-            Destroy(gameObject); // Destroy the fuel pickup after use
+                // // Play the pickup sound
+                // if (pickupSound != null && audioSource != null)
+                // {
+                //     audioSource.PlayOneShot(pickupSound);
+                // }
+
+                Destroy(gameObject); // Destroy the fuel pickup after use
+            }
+            else
+            {
+                Debug.LogWarning("Player GameObject doesn't have a LanternManager component on any of its children.");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("Collided with " + other.gameObject.name + " but it doesn't have a PlayerController component.");
         }
     }
 }
+
