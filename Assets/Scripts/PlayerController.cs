@@ -28,7 +28,7 @@ public class PlayerController : MonoBehaviour
 
     void Jump()
     {
-        Debug.Log("Is Grounded:" + isGrounded);
+        //Debug.Log("Is Grounded:" + isGrounded);
         if (Input.GetButtonDown("Jump") && isGrounded)
         {
             rb.velocity = new Vector2(rb.velocity.x, jumpForce);
@@ -47,12 +47,12 @@ public class PlayerController : MonoBehaviour
         if (hit.collider != null)
         {
             isGrounded = true;
-            Debug.Log("Grounded by Raycast");
+            //Debug.Log("Grounded by Raycast");
         }
         else
         {
             isGrounded = false;
-            Debug.Log("Not Grounded by Raycast");
+            // Debug.Log("Not Grounded by Raycast");
         }
     }
 }

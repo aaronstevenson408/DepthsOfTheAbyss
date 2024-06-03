@@ -6,6 +6,7 @@ public class CavernGenerator : MonoBehaviour
     public GameObject groundTilePrefab;
     public GameObject wallTilePrefab;
     public GameObject ceilingTilePrefab;
+    public GameObject fuelSourcePrefab; // Add reference to the FuelSource prefab
     public int numberOfHallways = 5;
     public int hallwayLength = 10;
     public float tileSize = 1; // Assuming one Unity unit represents a 32x32 pixel tile
@@ -21,6 +22,7 @@ public class CavernGenerator : MonoBehaviour
         {
             List<Tile> tiles = GenerateHallwayTiles();
             CreateHallway(tiles);
+            PlaceFuelSources(tiles); // Place fuel sources in the generated hallway
         }
     }
 
@@ -51,6 +53,27 @@ public class CavernGenerator : MonoBehaviour
             // Instantiate the prefab at the calculated position
             GameObject prefab = GetPrefabFromTileType(tile.type);
             Instantiate(prefab, position, Quaternion.identity);
+        }
+    }
+
+    void PlaceFuelSources(List<Tile> tiles)
+    {
+        int fuelSourceCount = Random.Range(1, 4); // Randomly decide how many fuel sources to place
+        Debug.Log($"Placing {fuelSourceCount} fuel sources.");
+
+        for (int i = 0; i < fuelSourceCount; i++)
+        {
+            // Find a random ground tile
+            Tile groundTile = null;
+            while (groundTile == null || groundTile.type != TileType.Ground)
+            {
+                groundTile = tiles[Random.Range(0, tiles.Count)];
+            }
+
+            // Adjust the position to be one tile higher
+            Vector3 position = new Vector3(groundTile.position.x * tileSize, (groundTile.position.y + 1) * tileSize, 0);
+            Debug.Log($"Placing fuel source at position: {position}");
+            Instantiate(fuelSourcePrefab, position, Quaternion.identity);
         }
     }
 

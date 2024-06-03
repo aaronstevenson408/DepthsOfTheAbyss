@@ -9,7 +9,7 @@ public class FollowPlayer : MonoBehaviour
     {
         // You can find the player GameObject by its tag or by directly referencing it
         // Example 1: Find by tag
-        // playerTransform = GameObject.FindGameObjectWithTag("Player").transform;
+        playerTransform = GameObject.FindGameObjectWithTag("Player").transform;
 
         // Example 2: Direct reference if you already have a reference to the player GameObject
         // playerTransform = myPlayerGameObject.transform;
