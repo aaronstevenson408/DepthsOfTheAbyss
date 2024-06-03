@@ -3,7 +3,10 @@ guid: d62f9cce6a691e843b6f3f438c53f53f
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
-  defaultReferences: []
+  defaultReferences:
+  - groundTilePrefab: {fileID: 62667854482258764, guid: 256634dc57363e7458d147f88b724a51, type: 3}
+  - wallTilePrefab: {fileID: 329661525538443882, guid: ff11f41054c2e8b4bbab8d561f1779a3, type: 3}
+  - ceilingTilePrefab: {fileID: 2054331595045902207, guid: ae95500ff698cf8438d32ebebd1f9331, type: 3}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 
