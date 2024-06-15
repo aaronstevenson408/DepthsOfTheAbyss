@@ -1,5 +1,4 @@
 using UnityEngine;
-using System;
 
 public class PlayerController : MonoBehaviour
 {
@@ -7,6 +6,9 @@ public class PlayerController : MonoBehaviour
     public float jumpForce = 10f;
     private Rigidbody2D rb;
     private bool isGrounded;
+
+    public ChainManager chainManager; // Reference to the ChainManager script
+    public int chainLengthChangeRate = 1; // How fast the chain length changes
 
     void Start()
     {
@@ -16,8 +18,8 @@ public class PlayerController : MonoBehaviour
     void Update()
     {
         Move();
-        CheckIfGrounded();
         Jump();
+        ManageChain();
     }
 
     void Move()
@@ -28,31 +30,68 @@ public class PlayerController : MonoBehaviour
 
     void Jump()
     {
-        //Debug.Log("Is Grounded:" + isGrounded);
         if (Input.GetButtonDown("Jump") && isGrounded)
         {
             rb.velocity = new Vector2(rb.velocity.x, jumpForce);
         }
     }
 
-    void CheckIfGrounded()
+    void ManageChain()
     {
-        // Adjust the raycast origin and length as needed
-        Vector2 origin = new Vector2(transform.position.x, transform.position.y - 0.5f); // Adjust the 0.5f based on your player's collider size
-        float raycastLength = 0.2f; // Adjust as needed
+        if (chainManager != null)
+        {
+            if (Input.GetKey(KeyCode.Q))
+            {
+                PullInChain();
+            }
+            else if (Input.GetKey(KeyCode.E))
+            {
+                LetOutChain();
+            }
+        }
+    }
+    void PullInChain()
+    {
+        if (chainManager != null)
+        {
+            int currentLength = chainManager.GetCurrentChainLength();
+            int newLength = currentLength - chainLengthChangeRate;
+            chainManager.SetChainLength(Mathf.Max(newLength, 1)); // Ensure the chain doesn't go below 1 link
+        }
+    }
 
-        RaycastHit2D hit = Physics2D.Raycast(origin, Vector2.down, raycastLength, LayerMask.GetMask("Ground"));
-        Debug.DrawRay(origin, Vector2.down * raycastLength, Color.red);
+    void LetOutChain()
+    {
+        if (chainManager != null)
+        {
+            int currentLength = chainManager.GetCurrentChainLength();
+            int newLength = currentLength + chainLengthChangeRate;
+            chainManager.SetChainLength(newLength);
+        }
+    }
 
-        if (hit.collider != null)
+    // These methods will handle collision detection with the ground
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.gameObject.GetComponent<CompositeCollider2D>() != null)
         {
             isGrounded = true;
-            //Debug.Log("Grounded by Raycast");
         }
-        else
+    }
+
+    private void OnCollisionStay2D(Collision2D collision)
+    {
+        if (collision.gameObject.GetComponent<CompositeCollider2D>() != null)
+        {
+            isGrounded = true;
+        }
+    }
+
+    private void OnCollisionExit2D(Collision2D collision)
+    {
+        if (collision.gameObject.GetComponent<CompositeCollider2D>() != null)
         {
             isGrounded = false;
-            // Debug.Log("Not Grounded by Raycast");
         }
     }
 }
