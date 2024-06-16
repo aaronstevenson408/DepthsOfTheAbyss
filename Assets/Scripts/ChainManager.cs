@@ -1,137 +1,89 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-// This class manages a chain of links between a player and a lantern
+// This class manages a chain of links between a player and a lantern in a 2D Unity game.
+// It handles the creation, initialization, and connection of chain links using physics joints.
 public class ChainManager : MonoBehaviour
 {
-    public GameObject chainLinkPrefab; // Prefab for the chain link
-    public Transform playerAnchor; // Transform of the player's anchor point
-    public Transform lanternAnchor; // Transform of the lantern's anchor point
-    public int initialLinkCount = 5; // Initial number of chain links
-    public LayerMask platformLayer; // Layer mask for platforms (currently unused)
-    public float linkSpacing = 0.1f; // Spacing between chain links
+    public GameObject chainLinkPrefab; // Prefab for creating individual chain links
+    public Transform playerAnchor; // Player's anchor point for chain attachment
+    public Transform lanternAnchor; // Lantern's anchor point for chain attachment
+    public int initialLinkCount = 5; // Number of chain links to create on initialization
+    public float linkSpacing = 0.01f; // Vertical distance between each chain link when positioned
 
-    private List<GameObject> chainLinks = new List<GameObject>(); // List to store chain link objects
+    private List<GameObject> chainLinks = new List<GameObject>(); // List to track all chain link GameObjects
 
+    // Called when the script instance is being loaded.
     void Start()
     {
-        InitializeChain(); // Initialize the chain when the script starts
+        InitializeChain(); // Set up the initial chain when the game starts
     }
 
-    /// <summary>
-    /// Initializes the chain by creating and connecting chain links between the player and the lantern.
-    /// </summary>
+    // Sets up the initial chain by creating chain links and connecting them between the player and the lantern.
+    // This method handles the instantiation, positioning, and joint setup for each link in the chain.
     void InitializeChain()
     {
-        Vector2 currentPosition = playerAnchor.position; // Start position at the player's anchor
+        Vector2 currentPosition = playerAnchor.position; // Start the chain at the player's anchor position
 
         GameObject firstLink = Instantiate(chainLinkPrefab, currentPosition, Quaternion.identity); // Create the first chain link
-        firstLink.GetComponent<Rigidbody2D>().isKinematic = true; // Make the first link kinematic initially
-        chainLinks.Add(firstLink); // Add the first link to the list
+        firstLink.name = "Chain Link 0 (Player)"; // Name the first link
+        chainLinks.Add(firstLink); // Add the first chain link to the list
 
-        HingeJoint2D playerJoint = playerAnchor.GetComponent<HingeJoint2D>(); // Get the player's hinge joint
-        playerJoint.connectedBody = firstLink.GetComponent<Rigidbody2D>(); // Connect the player to the first link
-        SetupHingeJoint(playerJoint, firstLink.transform); // Set up the hinge joint properties
+        HingeJoint2D playerJoint = playerAnchor.GetComponent<HingeJoint2D>(); // Get the player's HingeJoint2D component
+        playerJoint.connectedBody = firstLink.GetComponent<Rigidbody2D>(); // Connect player's joint to the first link
+        SetupHingeJoint(playerJoint, firstLink.transform); // Configure player's hinge joint properties
 
-        for (int i = 1; i < initialLinkCount; i++) // Create the rest of the initial chain links
+        // Loop to create the intermediate chain links
+        for (int i = 1; i < initialLinkCount - 1; i++) // Note the change here: initialLinkCount - 1
         {
-            GameObject previousLink = chainLinks[i - 1]; // Get the previous link
-            currentPosition = GetNextLinkPosition(previousLink); // Calculate the position for the new link
+            GameObject previousLink = chainLinks[i - 1]; // Get the previously created chain link
+            currentPosition = GetNextLinkPosition(previousLink); // Calculate position for the new link
 
-            GameObject newLink = Instantiate(chainLinkPrefab, currentPosition, Quaternion.identity); // Create a new link
-            chainLinks.Add(newLink); // Add the new link to the list
+            GameObject newLink = Instantiate(chainLinkPrefab, currentPosition, Quaternion.identity); // Create a new chain link
+            newLink.name = $"Chain Link {i}"; // Name the new link with its index
+            chainLinks.Add(newLink); // Add the new chain link to the list
 
-            HingeJoint2D previousJoint = previousLink.GetComponent<HingeJoint2D>(); // Get the previous link's hinge joint
-            previousJoint.connectedBody = newLink.GetComponent<Rigidbody2D>(); // Connect the previous link to the new link
-            SetupHingeJoint(previousJoint, newLink.transform); // Set up the hinge joint properties
+            HingeJoint2D previousJoint = previousLink.GetComponent<HingeJoint2D>(); // Get the previous link's joint
+            previousJoint.connectedBody = newLink.GetComponent<Rigidbody2D>(); // Connect previous link to the new link
+            SetupHingeJoint(previousJoint, newLink.transform); // Configure previous link's hinge joint properties
         }
 
-        HingeJoint2D lanternJoint = lanternAnchor.GetComponent<HingeJoint2D>(); // Get the lantern's hinge joint
-        lanternJoint.connectedBody = chainLinks[chainLinks.Count - 1].GetComponent<Rigidbody2D>(); // Connect the lantern to the last link
-        SetupHingeJoint(lanternJoint, chainLinks[chainLinks.Count - 1].transform); // Set up the hinge joint properties
+        // Create the last link (connected to the lantern) separately
+        GameObject lastLink = Instantiate(chainLinkPrefab, lanternAnchor.position, Quaternion.identity);
+        lastLink.name = $"Chain Link {initialLinkCount - 1} (Lantern)";
+        chainLinks.Add(lastLink);
 
-        // chainLinks[0].GetComponent<Rigidbody2D>().isKinematic = false; // Make the first link non-kinematic after setup
+        // Connect the second to last link to the last link
+        HingeJoint2D secondToLastJoint = chainLinks[chainLinks.Count - 2].GetComponent<HingeJoint2D>();
+        secondToLastJoint.connectedBody = lastLink.GetComponent<Rigidbody2D>();
+        SetupHingeJoint(secondToLastJoint, lastLink.transform);
+
+        // Connect the lantern to the last link
+        HingeJoint2D lanternJoint = lanternAnchor.GetComponent<HingeJoint2D>();
+        lanternJoint.connectedBody = lastLink.GetComponent<Rigidbody2D>();
+        SetupHingeJoint(lanternJoint, lastLink.transform);
     }
-
-    /// <summary>
-    /// Calculates the position for the next chain link based on the current link's position and joint.
-    /// </summary>
-    /// <param name="currentLink">The current chain link GameObject.</param>
-    /// <returns>The position for the next chain link.</returns>
+    // Determines the position for the next chain link based on the current link's position and joint configuration.
+    // This ensures that each new link is properly spaced and aligned with the previous link.
     Vector2 GetNextLinkPosition(GameObject currentLink)
     {
-        HingeJoint2D currentJoint = currentLink.GetComponent<HingeJoint2D>(); // Get the current link's hinge joint
-        Vector2 currentJointWorldPosition = currentLink.transform.TransformPoint(currentJoint.anchor); // Get the world position of the joint
-        return currentJointWorldPosition - new Vector2(0, linkSpacing); // Return the position below the current joint
+        HingeJoint2D currentJoint = currentLink.GetComponent<HingeJoint2D>(); // Get current link's HingeJoint2D
+        Vector2 currentJointWorldPosition = currentLink.transform.TransformPoint(currentJoint.anchor); // Convert joint's local anchor to world position
+        return currentJointWorldPosition - new Vector2(0, linkSpacing); // Calculate new position below the current joint
     }
 
-    /// <summary>
-    /// Sets up the properties of a hinge joint, including limits and connected anchor.
-    /// </summary>
-    /// <param name="joint">The HingeJoint2D to set up.</param>
-    /// <param name="connectedTransform">The Transform of the connected object.</param>
+    // Configures a HingeJoint2D with specific properties to create a limited and stable connection between two chain links.
+    // This method sets up angle limits and properly aligns the connected anchor point.
     void SetupHingeJoint(HingeJoint2D joint, Transform connectedTransform)
     {
-        joint.useLimits = true; // Enable joint angle limits
-        // joint.limits = new JointAngleLimits2D { min = -5, max = 5 }; // Set the joint angle limits/
-        joint.connectedAnchor = connectedTransform.InverseTransformPoint(connectedTransform.TransformPoint(connectedTransform.GetComponent<HingeJoint2D>().anchor)); // Set the connected anchor in local space
-    }
+        joint.useLimits = true; // Enable angle limits on the joint
+        joint.limits = new JointAngleLimits2D { min = -5, max = 5 }; // Set min and max rotation angles
 
-    /// <summary>
-    /// Adds a new link to the end of the chain.
-    /// </summary>
-    public void AddLink()
-    {
-        GameObject lastLink = chainLinks[chainLinks.Count - 1]; // Get the last link in the chain
-        Vector2 newPosition = GetNextLinkPosition(lastLink); // Calculate the position for the new link
-
-        GameObject newLink = Instantiate(chainLinkPrefab, newPosition, Quaternion.identity); // Create a new link
-        chainLinks.Add(newLink); // Add the new link to the list
-
-        HingeJoint2D lastJoint = lastLink.GetComponent<HingeJoint2D>(); // Get the last link's hinge joint
-        lastJoint.connectedBody = newLink.GetComponent<Rigidbody2D>(); // Connect the last link to the new link
-        SetupHingeJoint(lastJoint, newLink.transform); // Set up the hinge joint properties
-
-        HingeJoint2D lanternJoint = lanternAnchor.GetComponent<HingeJoint2D>(); // Get the lantern's hinge joint
-        lanternJoint.connectedBody = newLink.GetComponent<Rigidbody2D>(); // Connect the lantern to the new link
-        SetupHingeJoint(lanternJoint, newLink.transform); // Set up the hinge joint properties
-    }
-
-    /// <summary>
-    /// Removes the last link from the chain.
-    /// </summary>
-    public void RemoveLink()
-    {
-        if (chainLinks.Count > 1) // Only remove if there's more than one link
-        {
-            GameObject lastLink = chainLinks[chainLinks.Count - 1]; // Get the last link
-            chainLinks.RemoveAt(chainLinks.Count - 1); // Remove the last link from the list
-            Destroy(lastLink); // Destroy the last link GameObject
-
-            GameObject newLastLink = chainLinks[chainLinks.Count - 1]; // Get the new last link
-            HingeJoint2D lanternJoint = lanternAnchor.GetComponent<HingeJoint2D>(); // Get the lantern's hinge joint
-            lanternJoint.connectedBody = newLastLink.GetComponent<Rigidbody2D>(); // Connect the lantern to the new last link
-            SetupHingeJoint(lanternJoint, newLastLink.transform); // Set up the hinge joint properties
-        }
-    }
-
-    /// <summary>
-    /// Draws gizmos in the Unity editor to visualize the chain links and anchor points.
-    /// </summary>
-    void OnDrawGizmos()
-    {
-        if (!Application.isPlaying) return; // Only draw gizmos when the application is playing
-
-        Gizmos.color = Color.red; // Set gizmo color to red
-        Gizmos.DrawSphere(playerAnchor.position, 0.1f); // Draw a sphere at the player anchor
-        Gizmos.DrawSphere(lanternAnchor.position, 0.1f); // Draw a sphere at the lantern anchor
-
-        foreach (var link in chainLinks) // Iterate through all chain links
-        {
-            if (link != null) // Check if the link still exists
-            {
-                Gizmos.DrawSphere(link.transform.position, 0.05f); // Draw a small sphere at each link's position
-            }
-        }
+        // Calculate and set the connected anchor point in the local space of the connected object
+        joint.connectedAnchor = connectedTransform.InverseTransformPoint(
+            connectedTransform.TransformPoint(
+                connectedTransform.GetComponent<HingeJoint2D>().anchor
+            )
+        );
     }
 }
