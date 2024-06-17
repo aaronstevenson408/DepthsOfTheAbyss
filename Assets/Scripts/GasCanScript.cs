@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class FuelSource : MonoBehaviour
+public class GasCanScript : MonoBehaviour
 {
     public float fuelAmount = 20f;
     // public AudioClip pickupSound; // Public variable for the pickup sound

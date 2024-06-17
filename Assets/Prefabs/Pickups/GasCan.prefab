@@ -32,7 +32,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 4
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &7708596391319494514
 SpriteRenderer:
@@ -95,10 +95,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 289422352453209165}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 107d1fcb8c5289a4abb66cb541126226, type: 3}
+  m_Script: {fileID: 11500000, guid: 660047d3b4bf9dd4dad6c7ed4a577587, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  fuelAmount: 50
+  fuelAmount: 20
 --- !u!61 &6024483956844300113
 BoxCollider2D:
   m_ObjectHideFlags: 0
