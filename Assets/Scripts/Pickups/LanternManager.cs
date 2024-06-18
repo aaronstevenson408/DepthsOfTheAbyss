@@ -1,13 +1,12 @@
 using UnityEngine;
 
-
-public class LanternManager : MonoBehaviour
+public class LanternManager : MonoBehaviour, IPickup, IInteractable
 {
     public float maxFuel = 100f;
     public float fuelConsumptionRate = 1f;
     public float maxLightRadius = 5f;
     public UnityEngine.Rendering.Universal.Light2D lanternLight;
-    private float fuel;
+    [SerializeField] private float fuel;
 
     void Start()
     {
@@ -24,13 +23,10 @@ public class LanternManager : MonoBehaviour
     {
         if (fuel > 0)
         {
-            // Decrease fuel over time
             fuel -= fuelConsumptionRate * Time.deltaTime;
-            // Adjust light radius based on remaining fuel
             float radius = Mathf.Lerp(0, maxLightRadius, fuel / maxFuel);
             lanternLight.pointLightOuterRadius = radius;
 
-            // Example of a flicker effect
             if (fuel < maxFuel * 0.2f)
             {
                 lanternLight.intensity = Mathf.Lerp(0.5f, 1f, Mathf.PingPong(Time.time * 3, 1));
@@ -38,7 +34,6 @@ public class LanternManager : MonoBehaviour
         }
         else
         {
-            // Turn off the light if there's no fuel
             lanternLight.enabled = false;
         }
     }
@@ -49,6 +44,21 @@ public class LanternManager : MonoBehaviour
         if (fuel > 0 && !lanternLight.enabled)
         {
             lanternLight.enabled = true;
+        }
+    }
+
+    public void OnPickup(PlayerController player)
+    {
+        player.PickUpObject(gameObject);
+    }
+
+    public void Interact(GameObject item)
+    {
+        GasCan gasCan = item.GetComponent<GasCan>();
+        if (gasCan != null)
+        {
+            ReplenishFuel(gasCan.fuelAmount);
+            Destroy(gasCan.gameObject);
         }
     }
 }

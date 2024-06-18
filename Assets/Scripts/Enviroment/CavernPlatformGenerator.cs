@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
-public class PlatformGenerator : MonoBehaviour
+public class CavernPlatformGenerator : MonoBehaviour
 {
     public Tilemap tilemap; // Reference to the Tilemap
     public RuleTile platformTile; // Reference to your Rule Tile

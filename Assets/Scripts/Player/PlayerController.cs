@@ -29,11 +29,13 @@ public class PlayerController : MonoBehaviour
         Jump();
         HandleObjectPickup();
         HandleObjectThrow();
+        HandleObjectInteraction();
     }
 
     void Move()
     {
         float moveInput = Input.GetAxis("Horizontal");
+
         rb.velocity = new Vector2(moveInput * moveSpeed, rb.velocity.y);
 
         if (moveInput > 0 && !isFacingRight)
@@ -66,7 +68,6 @@ public class PlayerController : MonoBehaviour
         if (Input.GetButtonDown("Jump") && isGrounded)
         {
             rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
-            isGrounded = false;  // Immediately set to false for responsiveness
         }
     }
 
@@ -83,9 +84,10 @@ public class PlayerController : MonoBehaviour
                 Collider2D[] colliders = Physics2D.OverlapCircleAll(transform.position, pickupRadius);
                 foreach (Collider2D collider in colliders)
                 {
-                    if (collider.gameObject.CompareTag("Pickupable"))
+                    IPickup pickup = collider.GetComponent<IPickup>();
+                    if (pickup != null)
                     {
-                        PickUpObject(collider.gameObject);
+                        pickup.OnPickup(this);
                         break;
                     }
                 }
@@ -101,14 +103,36 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    void PickUpObject(GameObject obj)
+    void HandleObjectInteraction()
+    {
+        if (isHoldingObject)
+        {
+            Collider2D[] colliders = Physics2D.OverlapCircleAll(transform.position, pickupRadius);
+            foreach (Collider2D collider in colliders)
+            {
+                IInteractable interactable = collider.GetComponent<IInteractable>();
+                if (interactable != null)
+                {
+                    interactable.Interact(pickedObject);
+                }
+            }
+        }
+    }
+
+    public void PickUpObject(GameObject obj)
     {
         pickedObject = obj;
         pickedObject.transform.SetParent(transform);
         pickedObject.transform.localPosition = new Vector3(holdDistance, 0, 0);
         pickedObject.transform.localRotation = Quaternion.identity;
+
         Rigidbody2D objRb = pickedObject.GetComponent<Rigidbody2D>();
         objRb.simulated = false;
+        objRb.isKinematic = true;
+
+        Collider2D objCollider = pickedObject.GetComponent<Collider2D>();
+        objCollider.enabled = true;
+
         isHoldingObject = true;
 
         Renderer objRenderer = pickedObject.GetComponent<Renderer>();
@@ -122,8 +146,11 @@ public class PlayerController : MonoBehaviour
     void DropObject()
     {
         pickedObject.transform.SetParent(null);
+
         Rigidbody2D objRb = pickedObject.GetComponent<Rigidbody2D>();
         objRb.simulated = true;
+        objRb.isKinematic = false;
+
         pickedObject = null;
         isHoldingObject = false;
     }
@@ -132,16 +159,39 @@ public class PlayerController : MonoBehaviour
     {
         Rigidbody2D objRb = pickedObject.GetComponent<Rigidbody2D>();
         objRb.simulated = true;
+        objRb.isKinematic = false;
+
         pickedObject.transform.SetParent(null);
         Vector2 throwDirection = (Camera.main.ScreenToWorldPoint(Input.mousePosition) - transform.position).normalized;
         objRb.velocity = throwDirection * throwForce;
+
         pickedObject = null;
         isHoldingObject = false;
     }
 
+    private bool IsCollidingFromAbove(Collision2D collision)
+    {
+        foreach (ContactPoint2D contact in collision.contacts)
+        {
+            if (contact.normal.y >= 0.5f)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if (collision.contacts[0].normal.y > 0.5f)  // Check if collision is from below
+        if (collision.gameObject.GetComponent<CompositeCollider2D>() != null && IsCollidingFromAbove(collision))
+        {
+            isGrounded = true;
+        }
+    }
+
+    private void OnCollisionStay2D(Collision2D collision)
+    {
+        if (collision.gameObject.GetComponent<CompositeCollider2D>() != null && IsCollidingFromAbove(collision))
         {
             isGrounded = true;
         }
@@ -149,7 +199,7 @@ public class PlayerController : MonoBehaviour
 
     private void OnCollisionExit2D(Collision2D collision)
     {
-        if (collision.gameObject.GetComponent<Collider2D>() != null)
+        if (collision.gameObject.GetComponent<CompositeCollider2D>() != null)
         {
             isGrounded = false;
         }
